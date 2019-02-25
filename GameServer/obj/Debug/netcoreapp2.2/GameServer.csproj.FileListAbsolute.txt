@@ -1,0 +1,11 @@
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/Debug/netcoreapp2.2/GameServer.deps.json
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/Debug/netcoreapp2.2/GameServer.runtimeconfig.json
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/Debug/netcoreapp2.2/GameServer.runtimeconfig.dev.json
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/Debug/netcoreapp2.2/GameServer.dll
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/Debug/netcoreapp2.2/GameServer.pdb
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/Debug/netcoreapp2.2/GameServer.csprojAssemblyReference.cache
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/Debug/netcoreapp2.2/GameServer.csproj.CoreCompileInputs.cache
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/Debug/netcoreapp2.2/GameServer.AssemblyInfoInputs.cache
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/Debug/netcoreapp2.2/GameServer.AssemblyInfo.cs
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/Debug/netcoreapp2.2/GameServer.dll
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/Debug/netcoreapp2.2/GameServer.pdb
