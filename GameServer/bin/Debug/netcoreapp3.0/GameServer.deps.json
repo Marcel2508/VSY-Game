@@ -1,0 +1,34 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v3.0",
+    "signature": "730e0de4aba6190623f56d631d83c850d51cedb5"
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v3.0": {
+      "GameServer/1.0.0": {
+        "dependencies": {
+          "runtime.osx-x64.Microsoft.NETCore.DotNetAppHost": "3.0.0-preview-27324-5"
+        },
+        "runtime": {
+          "GameServer.dll": {}
+        }
+      },
+      "runtime.osx-x64.Microsoft.NETCore.DotNetAppHost/3.0.0-preview-27324-5": {}
+    }
+  },
+  "libraries": {
+    "GameServer/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "runtime.osx-x64.Microsoft.NETCore.DotNetAppHost/3.0.0-preview-27324-5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-jwOqm+UPTaL4rQDCpo9GxSp22ShRTYCgSh9bJJWwGIVL+nCVHlRE2zVQsq1VXWh2vy1fLdgvrrLnZD45ATXmzA==",
+      "path": "runtime.osx-x64.microsoft.netcore.dotnetapphost/3.0.0-preview-27324-5",
+      "hashPath": "runtime.osx-x64.microsoft.netcore.dotnetapphost.3.0.0-preview-27324-5.nupkg.sha512"
+    }
+  }
+}

@@ -6,7 +6,12 @@ namespace GameServer
     {
         static void Main(string[] args)
         {
-            ServerPacketHandler server = new ServerPacketHandler(8099);
+            TCPServer server = new TCPServer(9000);
+            GameServerRunner gameClass = new GameServerRunner(server);
+
+            //Starting to listen for TCL Clients...
+            server.startServer();
+            Console.WriteLine("ENDED");
         }
     }
 }

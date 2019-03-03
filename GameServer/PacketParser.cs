@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace GameServer
-{
+namespace GameServerOld
+{/*
     class OnPacketEventArgs : EventArgs{
         private PacketTypes _type;
         private BasePacket _packet;
@@ -145,5 +145,5 @@ namespace GameServer
                     break;
             }
         }
-    }
+    } */
 }

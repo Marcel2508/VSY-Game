@@ -12,9 +12,9 @@ namespace GameServer
         private TcpListener serverSocket;
         private bool run = true;
 
-        private List<ClientHandler> clientListe = new List<ClientHandler>();
+        //private List<ClientHandler> clientListe = new List<ClientHandler>();
 
-        public event EventHandler<ClientConnectedEventArgs> onClient;
+        public event EventHandler<OnSocketConnectionEventArgs> onClient;
         public TCPServer(int port){
             this.serverSocket = new TcpListener(IPAddress.Any,port);
         }
@@ -27,37 +27,38 @@ namespace GameServer
                 clientSocket = serverSocket.AcceptTcpClient();
                 ClientHandler client = new ClientHandler(clientSocket);
                 client.startClient();
-                this.clientListe.Add(client);
-                this.OnClientEmitter(new ClientConnectedEventArgs(this.clientListe.Count-1,client));
+                //this.clientListe.Add(client);
+                this.OnClientEmitter(-1,client);
             }
             serverSocket.Stop();
         }
 
-        protected virtual void OnClientEmitter(ClientConnectedEventArgs e){
-            EventHandler<ClientConnectedEventArgs> handler = this.onClient;
+        protected virtual void OnClientEmitter(int idx, ClientHandler h){
+            OnSocketConnectionEventArgs e = new OnSocketConnectionEventArgs(idx,h);
+            EventHandler<OnSocketConnectionEventArgs> handler = this.onClient;
             if(handler != null){
                 handler(this,e);
             }
         }
     }
 
-    class RawPacketReceiveEventArgs : EventArgs{
-        private int _length;
-        private byte[] _data;
-        public int length{
-            get{return _length;}
+    class OnPacketEventArgs : EventArgs{
+        private PacketTypes _type;
+        private BasePacket _packet;
+        public PacketTypes Type{
+            get{return _type;}
         }
-        public byte[] data{
-            get{return _data;}
+        public BasePacket Packet{
+            get{return _packet;}
         }
 
-        public RawPacketReceiveEventArgs(int l, byte[] d){
-            this._length = l;
-            this._data = d;
+        public OnPacketEventArgs(PacketTypes t, BasePacket p){
+            this._type = t;
+            this._packet = p;
         }
     }
 
-    class ClientConnectedEventArgs : EventArgs{
+    class OnSocketConnectionEventArgs : EventArgs{
         private int _id = 0;
         private ClientHandler _handler;
         public int id{
@@ -67,12 +68,228 @@ namespace GameServer
             get{return this._handler;}
         }
 
-        public ClientConnectedEventArgs(int i, ClientHandler h){
+        public OnSocketConnectionEventArgs(int i, ClientHandler h){
             this._id = i;
             this._handler = h;
         }
     }
 
+    class OnDisconnectEventArgs : EventArgs{
+        private long _lastContact=0;
+        public long LastContact{
+            get{return this._lastContact;}
+        }
+        public OnDisconnectEventArgs(long lc){
+            this._lastContact = lc;
+        }
+    }
+
+/* */
+    class ClientHandler{
+        private TcpClient socket;
+        private Thread socketThread;
+        private int bufferSize = 0;
+        private List<byte[]> parts = new List<byte[]>();
+        private short state = 0;//0: Head, 1: Payload
+        private int payloadLength = 0;
+        private bool parseMore = true;
+        private bool run = true;
+
+        private long lastContact = 0;
+        private Timer disconnectDetection;
+
+        private int _id = -1;
+        public int clientId{
+            get{return this._id;}
+            set{this._id = value;}
+        }
+
+        public event EventHandler<OnPacketEventArgs> onPacket;
+        public EventHandler<OnDisconnectEventArgs> onDisconnect;
+
+        protected virtual void EmitPacketEvent(BasePacket p)
+        {
+            OnPacketEventArgs e = new OnPacketEventArgs(p.Type,p);
+            EventHandler<OnPacketEventArgs> handler = onPacket;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void EmitDisconnectEvent()
+        {
+            OnDisconnectEventArgs e = new OnDisconnectEventArgs(this.lastContact);
+            EventHandler<OnDisconnectEventArgs> handler = onDisconnect;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        public void CloseConnection(){
+            this.run = false;
+        }
+
+        public ClientHandler(TcpClient sock){
+            this.socket = sock;
+            Console.WriteLine("Starting new Client Listener");
+            this.startClient();
+        }   
+
+        public void startClient(){
+            this.socketThread = new Thread(this.runListener);
+            this.socketThread.Start();
+            this.disconnectDetection = new Timer(this.checkConnection,null,5000,5000);
+        }
+
+        private void sendPong(){
+            this.Send(new PongPacket());
+        }
+
+        private void checkConnection(object e){
+            if(DateTimeOffset.UtcNow.ToUnixTimeSeconds()-this.lastContact>10000){
+                EmitDisconnectEvent();
+                this.CloseConnection();
+            }
+        }
+
+        private void runListener(){
+            NetworkStream stream = this.socket.GetStream();
+            while(this.run){
+                if(this.socket.Available>0){
+                    Console.WriteLine("Av1: "+this.socket.Available+" . "+this.bufferSize);
+                    this.bufferSize+=this.socket.Available;
+                    Console.WriteLine("Av2: "+this.socket.Available+" . "+this.bufferSize);
+                    byte[] tmp = new byte[this.socket.Available];
+                    stream.Read(tmp,0,this.socket.Available);
+                    Console.WriteLine(this.bufferSize+": "+BitConverter.ToString(tmp));
+                    this.parts.Add(tmp);
+                    this.parseMore=true;
+                    this.dataHandler();
+                }
+                Console.WriteLine("LLIP");
+                System.Threading.Thread.Sleep(10);
+            }
+            this.socket.Close();
+            this.disconnectDetection.Dispose();
+        }
+
+        private bool dataAvailable(int count){
+            if(this.bufferSize>=count)return true;
+            this.parseMore=false;
+            return false;
+        }
+        private byte[] getData(int count){
+            this.bufferSize-=count;
+            Console.WriteLine("PC: "+count+" : "+this.bufferSize);
+            for(int i=0;i<this.parts.Count;i++)Console.WriteLine("PART: "+this.parts[i].Length);
+            if(this.parts[0].Length==count)
+            {
+                byte[] t = this.parts[0];
+                this.parts.RemoveAt(0);
+                return t;
+            }
+            else if(this.parts[0].Length>count){
+                byte[] t = new byte[count];
+                byte[] r = new byte[this.parts[0].Length-count];
+                Array.Copy(this.parts[0],t,count);
+                Array.Copy(this.parts[0],count,r,0,this.parts[0].Length-count);
+                this.parts[0] = r;
+                return t;
+            }
+            else{
+                //Need to combine multiple ...
+                byte[] res = new byte[count];
+                int offset = 0;
+                int l = 0;
+                while(count>0){
+                    l = this.parts[0].Length;
+                    if(count >= l){
+                        Array.Copy(this.parts[0],0,res,offset,l);
+                        offset += l;
+                        this.parts.RemoveAt(0);
+                    }
+                    else{
+                        Array.Copy(this.parts[0],0,res,offset,count);
+                        byte[] r = new byte[l-count];
+                        Array.Copy(this.parts[0],count,r,0,l-count);
+                        this.parts[0] = r;
+                    }
+                    count -= l;
+                }
+                return res;
+            }
+        }
+
+        private void readHeader(){
+            if(this.dataAvailable(2)){
+                this.payloadLength = BitConverter.ToInt16(this.getData(2),0);
+                this.state=1;
+            }
+        }
+        private void readPayload(){
+            if(this.dataAvailable(this.payloadLength)){
+                byte[] data = this.getData(this.payloadLength);
+                PacketTypes p = (PacketTypes)BitConverter.ToInt16(data,0);
+                Console.WriteLine("Received packed");
+                switch(p){
+                    case PacketTypes.PING:
+                        this.lastContact = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                        this.sendPong();
+                        break;
+                    case PacketTypes.CONNECT:
+                        this.EmitPacketEvent(new ConnectPacket(data));
+                        break;
+                    case PacketTypes.GAME_ACTION:
+                        this.EmitPacketEvent(new GameActionPacket(data));
+                        break;
+                    case PacketTypes.GAME_ERR:
+                        this.EmitPacketEvent(new GameErrorPacket(data));
+                        break;
+                    case PacketTypes.GAME_CLIENT_END:
+                        this.EmitPacketEvent(new GameClientEndPacket(data));
+                        break;
+                    default:
+                        Console.WriteLine("UNRECOGNIZED PACKED RECEIVED! Packet Type: "+Convert.ToInt32(p));
+                        break;
+                    
+                }
+                this.state=0;
+            }
+        }
+
+        private void dataHandler(){
+            while(this.parseMore){
+                if(this.state==0){
+                    Console.WriteLine("HEAD");
+                    this.readHeader();
+                }
+                else{
+                    Console.WriteLine("BODY"); 
+                    this.readPayload();
+                }
+            }
+        }
+
+        //SENDING:
+        public void Send(BasePacket packet){
+            Console.WriteLine("Sending Packet");
+            byte[] d = packet.getBytes();
+            byte[] c = new byte[d.Length+2];
+            BitConverter.GetBytes(Convert.ToInt16(d.Length)).CopyTo(c,0);
+            d.CopyTo(c,2);
+            try{
+                this.socket.GetStream().Write(c,0,c.Length);
+            }
+            catch{
+                this.EmitDisconnectEvent();
+            }
+        }
+    }
+}
+
+/*
     class ClientHandler
     {
         private TcpClient socket;
@@ -201,7 +418,12 @@ namespace GameServer
             byte[] c = new byte[d.Length+2];
             BitConverter.GetBytes(Convert.ToInt16(d.Length)).CopyTo(c,0);
             d.CopyTo(c,2);
-            this.socket.GetStream().Write(c,0,c.Length);
+            try{
+                this.socket.GetStream().Write(c,0,c.Length);
+            }
+            catch{
+                this
+            }
         }
     }
-}
+}*/
