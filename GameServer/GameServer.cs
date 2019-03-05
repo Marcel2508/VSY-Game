@@ -92,7 +92,13 @@ namespace GameServer
     private void handlePacketProxy(object sender, OnPacketEventArgs e){
       switch(e.Type){
         case PacketTypes.GET_ROOM_LIST:
-          this.Send(this.server.GetRoomListPacket());
+          RoomListPacket l = (RoomListPacket)this.server.GetRoomListPacket();
+          RoomListPacket l2 = new RoomListPacket(l.getBytes());
+          Console.WriteLine("Room Count: "+l2.RoomCount);
+          for(int i=0;i<l2.RoomCount;i++){
+            Console.WriteLine(l2.RoomList[i].Id+": "+l2.RoomList[i].P1Name);
+          }
+          this.Send(l);
           break;
         case PacketTypes.CONNECT:
           this.handleConnectPacket((ConnectPacket)e.Packet);
@@ -163,12 +169,14 @@ namespace GameServer
     }
 
     public void addToRoom(GameClient client, int roomId){
-      this.rooms[this.roomNum(roomId)].Client2Connect(client);
+      if(this.roomNum(roomId)!=-1)
+        this.rooms[this.roomNum(roomId)].Client2Connect(client);
     }
 
     public void closeRoom(int roomId,GameClient client,string message){
       //called by disconnected clients
-      this.rooms[this.roomNum(roomId)].closeRoom(false,message,client);
+      if(this.roomNum(roomId)!=-1)
+        this.rooms[this.roomNum(roomId)].closeRoom(false,message,client);
     }
 
     private void handleClient(object sender, OnSocketConnectionEventArgs e){
@@ -187,7 +195,8 @@ namespace GameServer
       //Reset clients and destory Room
       this.rooms.Remove(room);
       room.Client1.resetClient();
-      room.Client2.resetClient();
+      if(room.Full)
+        room.Client2.resetClient();
     }
 
   }

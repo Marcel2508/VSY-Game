@@ -74,6 +74,7 @@ namespace GameServer
         }
     }
 
+    //Todo: Switch to System.Timers.Timer !!! 
     class OnDisconnectEventArgs : EventArgs{
         private long _lastContact=0;
         public long LastContact{
@@ -96,7 +97,7 @@ namespace GameServer
         private bool run = true;
 
         private long lastContact = 0;
-        private Timer disconnectDetection;
+        private System.Timers.Timer disconnectDetection;
 
         private int _id = -1;
         public int clientId{
@@ -119,6 +120,8 @@ namespace GameServer
 
         protected virtual void EmitDisconnectEvent()
         {
+            Console.WriteLine("Client disconnected!");
+            this.CloseConnection();
             OnDisconnectEventArgs e = new OnDisconnectEventArgs(this.lastContact);
             EventHandler<OnDisconnectEventArgs> handler = onDisconnect;
             if (handler != null)
@@ -134,23 +137,25 @@ namespace GameServer
         public ClientHandler(TcpClient sock){
             this.socket = sock;
             Console.WriteLine("Starting new Client Listener");
-            this.startClient();
         }   
 
         public void startClient(){
             this.socketThread = new Thread(this.runListener);
             this.socketThread.Start();
-            this.disconnectDetection = new Timer(this.checkConnection,null,5000,5000);
+            this.disconnectDetection = new System.Timers.Timer(5000);//new Timer(this.checkConnection,null,5000,5000);
+            this.disconnectDetection.Elapsed+=this.checkConnection;
+            this.disconnectDetection.Start();
         }
 
         private void sendPong(){
             this.Send(new PongPacket());
         }
 
-        private void checkConnection(object e){
+        private void checkConnection(object sender, EventArgs e){
+            Console.WriteLine("Check Connection"+(DateTimeOffset.UtcNow.ToUnixTimeSeconds()-this.lastContact));
             if(DateTimeOffset.UtcNow.ToUnixTimeSeconds()-this.lastContact>10000){
-                EmitDisconnectEvent();
                 this.CloseConnection();
+                EmitDisconnectEvent();
             }
         }
 
@@ -158,20 +163,23 @@ namespace GameServer
             NetworkStream stream = this.socket.GetStream();
             while(this.run){
                 if(this.socket.Available>0){
-                    Console.WriteLine("Av1: "+this.socket.Available+" . "+this.bufferSize);
-                    this.bufferSize+=this.socket.Available;
-                    Console.WriteLine("Av2: "+this.socket.Available+" . "+this.bufferSize);
-                    byte[] tmp = new byte[this.socket.Available];
-                    stream.Read(tmp,0,this.socket.Available);
-                    Console.WriteLine(this.bufferSize+": "+BitConverter.ToString(tmp));
-                    this.parts.Add(tmp);
-                    this.parseMore=true;
-                    this.dataHandler();
+                    try{
+                        this.bufferSize+=this.socket.Available;
+                        byte[] tmp = new byte[this.socket.Available];
+                        stream.Read(tmp,0,this.socket.Available);
+                        this.parts.Add(tmp);
+                        this.parseMore=true;
+                        this.dataHandler();
+                    }
+                    catch(Exception ex){
+                        this.EmitDisconnectEvent();
+                        Console.WriteLine(ex.Message);
+                    }
                 }
-                Console.WriteLine("LLIP");
                 System.Threading.Thread.Sleep(10);
             }
             this.socket.Close();
+            this.disconnectDetection.Stop();
             this.disconnectDetection.Dispose();
         }
 
@@ -182,8 +190,6 @@ namespace GameServer
         }
         private byte[] getData(int count){
             this.bufferSize-=count;
-            Console.WriteLine("PC: "+count+" : "+this.bufferSize);
-            for(int i=0;i<this.parts.Count;i++)Console.WriteLine("PART: "+this.parts[i].Length);
             if(this.parts[0].Length==count)
             {
                 byte[] t = this.parts[0];
@@ -232,7 +238,7 @@ namespace GameServer
             if(this.dataAvailable(this.payloadLength)){
                 byte[] data = this.getData(this.payloadLength);
                 PacketTypes p = (PacketTypes)BitConverter.ToInt16(data,0);
-                Console.WriteLine("Received packed");
+                Console.WriteLine("Received packed "+Convert.ToInt32(p));
                 switch(p){
                     case PacketTypes.PING:
                         this.lastContact = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -250,6 +256,9 @@ namespace GameServer
                     case PacketTypes.GAME_CLIENT_END:
                         this.EmitPacketEvent(new GameClientEndPacket(data));
                         break;
+                    case PacketTypes.GET_ROOM_LIST:
+                        this.EmitPacketEvent(new GetRoomListPacket(data));
+                        break;
                     default:
                         Console.WriteLine("UNRECOGNIZED PACKED RECEIVED! Packet Type: "+Convert.ToInt32(p));
                         break;
@@ -262,11 +271,9 @@ namespace GameServer
         private void dataHandler(){
             while(this.parseMore){
                 if(this.state==0){
-                    Console.WriteLine("HEAD");
                     this.readHeader();
                 }
                 else{
-                    Console.WriteLine("BODY"); 
                     this.readPayload();
                 }
             }

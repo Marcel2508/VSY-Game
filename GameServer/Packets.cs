@@ -19,6 +19,10 @@ namespace GameServer
       GET_ROOM_LIST = 0x50, // Fragt eine Aktuelle Auflistung aller GameRooms ab
       ROOM_LIST = 0x51, // Gibt die Auflistung der Rooms zurück
 
+      SERVER_SYNC_REQUEST = 0xB0,
+      SERVER_SYNC_RESPONSE = 0xB1,
+
+      //Nicht implementiert:
       SERVER_MASTER= 0xA0, // Initializing Master-Slave Data-Connection
       SERVER_SLAVE = 0xA1, // Slave acknowledges the Connection
       SERVER_SYNC = 0xB0, // Master sends updated Game Data to Slave
@@ -527,6 +531,37 @@ namespace GameServer
         return r;
       }
     }
+
+
+    /*class ServerSyncRequestPacket : BasePacket{
+      public override PacketTypes Type{
+        get{return PacketTypes.SERVER_SYNC_REQUEST;}
+      }
+      private int curRoomId = 0;
+      private int curPlayerId = 0;
+
+      public string Message{
+        get{return message;}
+      }
+
+      public GameClientEndPacket(string m){
+        this.message = m;
+      }
+
+      public GameClientEndPacket(byte[] raw){
+        int sl = BitConverter.ToInt16(raw,2);
+        this.message = System.Text.Encoding.UTF8.GetString(raw,4,sl);
+      }
+
+      public override byte[] getBytes(){
+        int sl = System.Text.Encoding.UTF8.GetByteCount(this.message);
+        byte[] r = new byte[4+sl];
+        BitConverter.GetBytes(Convert.ToInt16(this.Type)).CopyTo(r,0);
+        BitConverter.GetBytes(Convert.ToInt16(sl)).CopyTo(r,2);
+        System.Text.Encoding.UTF8.GetBytes(this.message).CopyTo(r,4);
+        return r;
+      }
+    }*/
 
     //TODO: ServerMasterPacket
     //TODO: ServerSlavePacket

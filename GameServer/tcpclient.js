@@ -6,8 +6,22 @@ process.stdin.setEncoding('utf8');
 const rl = readline.createInterface({
   input: process.stdin,
   output:process.stdout,
-  terminal:false
+  terminal:true
 });
+
+/*class Terminal{
+
+  constructor(){
+    this.rl = readline.createInterface({
+      input:process.stdin,
+      output:process.stdout
+    });
+    this.rl.
+  }
+}*/
+
+
+
 
 const ptr = {
   "CONNECT":(_)=>{
@@ -80,6 +94,30 @@ function pt(v){
   }
 } 
 
+function displayRoom(buff,offset){
+  var id = buff.readInt32LE(offset+2);
+  var full = buff.readInt8(offset+6);
+  var sl = buff.readInt16LE(offset+7);
+  var str = buff.toString("utf8",offset+9,sl);
+  if(full){
+    var sl2 = buff.readInt16LE(offset+9+sl);
+    var str2 = buff.toString("utf8",offset+11+sl,sl2);
+  }
+  process.stdout.write("ID:",id,"- FULL:",full,"- Name1:",str,"- Name2:",str2);
+}
+
+function displayRoomList(buff){
+  var c = buff.readInt16LE(4);
+  var offset = 6;
+  process.stdout.write("ROOMS:");
+  for(var i=0;i<c;i++){
+    var ps = buff.readInt16LE(offset);
+    displayRoom(buff,offset);
+    offset+=ps;
+  }
+}
+
+
 function pingPacket(){
   var buff = Buffer.allocUnsafe(12);
   buff.writeInt16LE(10,0);
@@ -143,7 +181,9 @@ gsock = new net.Socket();
 
 gsock.on("data",(d)=>{
   var v = d.readInt16LE(2);
+  if(v!==1)
   process.stdout.write("Got "+pt(v)+" Packet of size: "+d.length+"!");
+  if(v==0x51)displayRoomList(d);
 });
 
 

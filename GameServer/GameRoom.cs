@@ -96,7 +96,7 @@ namespace GameServer
 
             //checks left diagonal win
             for(i=0;i<7-3;i++)
-                for(j=0;j<6-3;j++)
+                for(j=5;j>2;j--)
                     if(this.fieldState[i,j] != 0 && this.fieldState[i,j]==this.fieldState[i+1,j-1] && this.fieldState[i,j]==this.fieldState[i+2,j-2] && this.fieldState[i,j]==this.fieldState[i+3,j-3])
                        return true;
             return false;
@@ -127,6 +127,7 @@ namespace GameServer
                         GameActionNotifyPacket np = new GameActionNotifyPacket(p.Column);
                         this.client1.Send(np);
                         this.client2.Send(np);
+                        this.state = RoomStates.CLIENT2_TURN;
                         this.checkGameState();
                     }
                     else //Invalid Move!
@@ -143,6 +144,7 @@ namespace GameServer
                         GameActionNotifyPacket np = new GameActionNotifyPacket(p.Column);
                         this.client1.Send(np);
                         this.client2.Send(np);
+                        this.state = RoomStates.CLIENT1_TURN;
                         this.checkGameState();
                     }
                     else //Invalid Move!

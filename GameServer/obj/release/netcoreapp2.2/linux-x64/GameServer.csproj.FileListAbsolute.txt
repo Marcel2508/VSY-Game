@@ -1,0 +1,14 @@
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/release/netcoreapp2.2/linux-x64/libhostpolicy.so
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/release/netcoreapp2.2/linux-x64/libhostfxr.so
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/release/netcoreapp2.2/linux-x64/GameServer
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/release/netcoreapp2.2/linux-x64/GameServer.deps.json
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/release/netcoreapp2.2/linux-x64/GameServer.runtimeconfig.json
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/release/netcoreapp2.2/linux-x64/GameServer.runtimeconfig.dev.json
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/release/netcoreapp2.2/linux-x64/GameServer.dll
+/Users/marcel/dev/HSNR-VSY/GameServer/bin/release/netcoreapp2.2/linux-x64/GameServer.pdb
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/release/netcoreapp2.2/linux-x64/GameServer.csprojAssemblyReference.cache
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/release/netcoreapp2.2/linux-x64/GameServer.csproj.CoreCompileInputs.cache
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/release/netcoreapp2.2/linux-x64/GameServer.AssemblyInfoInputs.cache
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/release/netcoreapp2.2/linux-x64/GameServer.AssemblyInfo.cs
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/release/netcoreapp2.2/linux-x64/GameServer.dll
+/Users/marcel/dev/HSNR-VSY/GameServer/obj/release/netcoreapp2.2/linux-x64/GameServer.pdb
